@@ -1,5 +1,5 @@
 /*
- *      Copyright (C) 2011-2012 Team XBMC
+ *      Copyright (C) 2011-2013 Team XBMC
  *      http://www.xbmc.org
  *
  *  This Program is free software; you can redistribute it and/or modify
@@ -1818,6 +1818,7 @@ void COMXPlayer::UpdateLimits(double& minimum, double& maximum, double dts)
 
 void COMXPlayer::CheckContinuity(COMXCurrentStream& current, DemuxPacket* pPacket)
 {
+  // TODO: Check this for rewind?
   if (m_playSpeed < DVD_PLAYSPEED_PAUSE)
     return;
 
@@ -2130,6 +2131,7 @@ void COMXPlayer::HandleMessages()
             if(!m_pSubtitleDemuxer->SeekTime(time, msg.GetBackward()))
               CLog::Log(LOGDEBUG, "failed to seek subtitle demuxer: %d, success", time);
           }
+          // TODO: Resetting OMX clock in FlushBuffers in this situation cancels the video fast forward though the timeline keeps on going fase
           FlushBuffers(!msg.GetFlush(), start, msg.GetAccurate());
         }
         else
@@ -2435,9 +2437,13 @@ void COMXPlayer::SetCaching(ECacheState state)
 
 void COMXPlayer::SetPlaySpeed(int speed)
 {
-  /* only pause and normal playspeeds are allowed */
-  if(speed < 0 || speed > DVD_PLAYSPEED_NORMAL)
-    return;
+  // If going to normal speed from fast forward or rewind, audio may be
+  // out of sync. Lets fix it by seeking to the correct position.
+  if ((m_playSpeed !=speed) && (DVD_PLAYSPEED_NORMAL == speed))
+  {
+    SeekTime(GetTime());
+    FlushBuffers(false);
+  }
 
   m_messenger.Put(new CDVDMsgInt(CDVDMsg::PLAYER_SETSPEED, speed));
   SynchronizeDemuxer(100);
@@ -2877,10 +2883,6 @@ void COMXPlayer::ToFFRW(int iSpeed)
   // can't rewind in menu as seeking isn't possible
   // forward is fine
   if (iSpeed < 0 && IsInMenu()) return;
-
-  /* only pause and normal playspeeds are allowed */
-  if(iSpeed > 1 || iSpeed < 0)
-    return;
 
   SetPlaySpeed(iSpeed * DVD_PLAYSPEED_NORMAL);
 }
