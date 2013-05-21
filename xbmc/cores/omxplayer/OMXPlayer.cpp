@@ -1657,7 +1657,7 @@ void COMXPlayer::HandlePlaySpeed()
       // the time it takes to seek doesn't make a difference.
       double error;
       error  = m_av_clock.GetClock() - m_SpeedState.lastpts;
-      error *= m_playSpeed / abs(m_playSpeed);
+      //error *= m_playSpeed / abs(m_playSpeed);
 
       if(error > DVD_MSEC_TO_TIME(1000))
       {
@@ -2931,8 +2931,8 @@ bool COMXPlayer::OpenAudioStream(int iStream, int source, bool reset)
       pStream->SetDiscard(AVDISCARD_ALL);
       return false;
     }
-    m_av_clock.SetSpeed(DVD_PLAYSPEED_NORMAL);
-    m_av_clock.OMXSetSpeed(DVD_PLAYSPEED_NORMAL);
+    //m_av_clock.SetSpeed(DVD_PLAYSPEED_NORMAL);
+    //m_av_clock.OMXSetSpeed(DVD_PLAYSPEED_NORMAL);
   }
   else if (reset)
     m_player_audio.SendMessage(new CDVDMsg(CDVDMsg::GENERAL_RESET));
